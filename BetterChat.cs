@@ -27,6 +27,7 @@ namespace UserMenuInChat.mod
             public Rect userrec;
             public int end;//y-coordinate, where msg ends
             public int usernamelength;
+            public bool admin;
         }
 
         struct wordclickdata
@@ -231,6 +232,9 @@ namespace UserMenuInChat.mod
                     scrollsTypes["ChatRooms"].Methods.GetMethod("ChatMessage", new Type[]{typeof(RoomChatMessageMessage)}),
                     //scrollsTypes["ChatUI"].Methods.GetMethod("Initiate")[0],
                     //scrollsTypes["CardTypeManager"].Methods.GetMethod("get",new Type[]{typeof(int)}),
+                    // only for testing:
+                    //scrollsTypes["ChatRooms"].Methods.GetMethod("GetUserAdminRoleInRoom", new Type[]{typeof(string),typeof(string)}),
+                    
                 };
             }
             catch
@@ -242,11 +246,25 @@ namespace UserMenuInChat.mod
 
         public override bool WantsToReplace(InvocationInfo info)
         {
+            /*if (info.target is ChatRooms && info.targetMethod.Equals("GetUserAdminRoleInRoom"))
+            {
+               string name = (string) info.arguments[0];
+               if (name == "usernameXD")
+               { return true; }
+            }
+             */ 
+            
             return false;
         }
         public override void ReplaceMethod(InvocationInfo info, out object returnValue)
         {
             returnValue = null;
+            /*if (info.target is ChatRooms && info.targetMethod.Equals("GetUserAdminRoleInRoom"))
+            {
+                returnValue = AdminRole.Mojang; // or AdminRole.Admin
+            }
+            */
+
         }
 
         public override void BeforeInvoke(InvocationInfo info)
@@ -289,9 +307,13 @@ namespace UserMenuInChat.mod
         }
 
 
-        private string whitchwordclicked(string mssg, GUIStyle style, float width, int normlhight, int globalfromxstart, int ystart, Vector2 mousepos, bool symbol) 
+        private string whitchwordclicked(string mssg, GUIStyle style, float width, int normlhight, int globalfromxstart, int ystart, Vector2 mousepos, bool admin) 
         { //calculate which word you have clicked!
-            string clearmssg = Regex.Replace(mssg, @"(<color=#[A-Za-z0-9]{0,6}>)|(</color>)", String.Empty); ;
+            string clearmssg = Regex.Replace(mssg, @"(<color=#[A-Za-z0-9]{0,6}>)|(</color>)", String.Empty);
+            if (admin)
+            {
+                clearmssg = "iiii "+clearmssg;// "# " has worked properly?
+            }
             string[] words = clearmssg.Split(' ');
             string klickedword = "";
             string lastline = "";
@@ -623,14 +645,12 @@ namespace UserMenuInChat.mod
                                 String shorttxt = Regex.Replace(current.text, @"(<color=#[A-Za-z0-9]{0,6}>)|(</color>)", String.Empty);
                                 templog.msg = current.text;
 
+                                
                                 templog.from = shorttxt.Split(':')[0];
-                                chatLogStyle.wordWrap = false;// need to do this, or length of calcsize is wrong.. lol!!!
-                                Vector2 v = chatLogStyle.CalcSize(new GUIContent(templog.from + ":"));//calc length of "username:"
-                                chatLogStyle.wordWrap = true;
-                               
-                                /*
+                                templog.admin = false; //for testing true
                                 if (current.senderAdminRole == AdminRole.Mojang)
                                 {
+                                    templog.admin = true;
                                     //chatLogStyle.fontSize
                                 }
 
@@ -638,9 +658,19 @@ namespace UserMenuInChat.mod
                                 {
                                     if (current.senderAdminRole == AdminRole.Moderator)
                                     {
-
+                                        templog.admin = true;
                                     }
-                                }*/
+                                }
+
+                                chatLogStyle.wordWrap = false;// need to do this, or length of calcsize is wrong.. lol!!!
+                                Vector2 v = chatLogStyle.CalcSize(new GUIContent(templog.from + ":"));//calc length of "username:"
+                                if (templog.admin)
+                                { // "iiii " has the same length like the symbol
+                                    v = chatLogStyle.CalcSize(new GUIContent("iiii "+templog.from + ":"));//calc length of "username:"
+                                }
+                                chatLogStyle.wordWrap = true;
+
+                                
                                 float msgheight = chatLogStyle.CalcHeight(new GUIContent(current.text), width);
                                 //float msgheight = chatLogStyle.CalcHeight(new GUIContent(shorttxt), width);
                                 //Console.WriteLine(current.text + " " + shorttxt + " " + msgheight);
@@ -670,6 +700,7 @@ namespace UserMenuInChat.mod
                         //calculate mouseposy in chatbox (if maus klicks in the left upper edge of chatlogareainner with scrollbar on the top, the value is zero ) 
                         int realmousy = currentuppery + (int)screenMousePos.y - (int)chatlogAreaInner.yMin;
                         //Console.WriteLine("border chatinner: " + chatlogAreaInner.xMin + " " + chatlogAreaInner.yMin + " " + chatlogAreaInner.xMax + " " + chatlogAreaInner.yMax);
+                        //Console.WriteLine("fontsize: " + chatLogStyle.fontSize);
                         //Console.WriteLine("maus " + screenMousePos.x + " " + realmousy);
                         Vector2 mousepos = new Vector2(screenMousePos.x, realmousy);
 
@@ -679,7 +710,7 @@ namespace UserMenuInChat.mod
                             Rect usrbutton = log.userrec;
                             if (usrbutton.Contains(mousepos))
                             {
-
+                                //Console.WriteLine("userrecx " + log.userrec.xMin+" "+log.userrec.xMax);
                                 //Console.WriteLine("klicked: " + log.from);
                                 //##################
                                 string sender = log.from;
@@ -696,9 +727,11 @@ namespace UserMenuInChat.mod
                                 break;
                             }
                             if (mousepos.y >= usrbutton.yMin && mousepos.y <= log.end) 
-                            { 
-                                string klickedword = whitchwordclicked(log.msg, chatLogStyle, width, normlhight, globalfromxstart, (int)usrbutton.yMin+2, mousepos, false);
+                            {
+                                
+                                string klickedword = whitchwordclicked(log.msg, chatLogStyle, width, normlhight, globalfromxstart, (int)usrbutton.yMin+2, mousepos, log.admin);
                                 //clickable link?
+                                
                                 Match match = linkFinder.Match(klickedword);
                                 if (match.Success)
                                 {
@@ -837,7 +870,7 @@ namespace UserMenuInChat.mod
             return;
         }
 
-        //need following 4 methods for icardrule
+        //need following 6 methods for icardrule
         public void HideCardView()
         {
            
