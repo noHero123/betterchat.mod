@@ -85,6 +85,7 @@ namespace UserMenuInChat.mod
         private FieldInfo chatRoomsinfo;
         private FieldInfo timeStampStyleinfo;
         private FieldInfo chatLogStyleinfo;
+        private MethodInfo CloseUserMenuinfo;
         private MethodInfo createUserMenuinfo;
         private MethodInfo challengeUserMethod;    
         private MethodInfo profileUserMethod;
@@ -177,7 +178,7 @@ namespace UserMenuInChat.mod
             cardImageField = typeof(CardView).GetField("cardImage", BindingFlags.Instance | BindingFlags.NonPublic);
             gosactiveAbilityField = typeof(CardView).GetField("gosActiveAbilities", BindingFlags.Instance | BindingFlags.NonPublic);
 
-
+            CloseUserMenuinfo = typeof(ChatUI).GetMethod("CloseUserMenu", BindingFlags.Instance | BindingFlags.NonPublic);
             createUserMenuinfo = typeof(ChatUI).GetMethod("CreateUserMenu", BindingFlags.Instance | BindingFlags.NonPublic);
             challengeUserMethod = typeof(ChatUI).GetMethod("ChallengeUser", BindingFlags.Instance | BindingFlags.NonPublic);
             tradeUserMethod = typeof(ChatUI).GetMethod("TradeUser", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -276,11 +277,19 @@ namespace UserMenuInChat.mod
         }
         private void OpenLink(ChatUser user)
         {
+            this.CloseUserMenuinfo.Invoke(target, null);
             Process.Start(this.globallink);
         }
 
+        private void whisperclick(ChatUser user)
+        {
+            this.CloseUserMenuinfo.Invoke(target,null);
+            App.ArenaChat.OpenWhisperRoom(user.name);
+            
+        }
 
-        private string whitchwordclicked(string mssg, GUIStyle style, float width, int normlhight, int globalfromxstart, int ystart, Vector2 mousepos) 
+
+        private string whitchwordclicked(string mssg, GUIStyle style, float width, int normlhight, int globalfromxstart, int ystart, Vector2 mousepos, bool symbol) 
         { //calculate which word you have clicked!
             string clearmssg = Regex.Replace(mssg, @"(<color=#[A-Za-z0-9]{0,6}>)|(</color>)", String.Empty); ;
             string[] words = clearmssg.Split(' ');
@@ -501,6 +510,9 @@ namespace UserMenuInChat.mod
 		{
 			userContextMenu.add("Trade", new ContextMenu<ChatUser>.URCMCallback(TradeUser));
 		}
+
+        userContextMenu.add("Whisper", new ContextMenu<ChatUser>.URCMCallback(whisperclick));
+
         if (user.acceptChallenges)
         {
             userContextMenu.add("Challenge", new ContextMenu<ChatUser>.URCMCallback(ChallengeUser));
@@ -685,7 +697,7 @@ namespace UserMenuInChat.mod
                             }
                             if (mousepos.y >= usrbutton.yMin && mousepos.y <= log.end) 
                             { 
-                                string klickedword = whitchwordclicked(log.msg, chatLogStyle, width, normlhight, globalfromxstart, (int)usrbutton.yMin+2, mousepos);
+                                string klickedword = whitchwordclicked(log.msg, chatLogStyle, width, normlhight, globalfromxstart, (int)usrbutton.yMin+2, mousepos, false);
                                 //clickable link?
                                 Match match = linkFinder.Match(klickedword);
                                 if (match.Success)
