@@ -229,7 +229,8 @@ namespace UserMenuInChat.mod
                     scrollsTypes["ChatRooms"].Methods.GetMethod("LeaveRoom", new Type[]{typeof(string)}),
                     scrollsTypes["ChatRooms"].Methods.GetMethod("SetRoomInfo", new Type[] {typeof(RoomInfoMessage)}),
                     scrollsTypes["ChatUI"].Methods.GetMethod("OnGUI")[0],
-                    scrollsTypes["ChatRooms"].Methods.GetMethod("ChatMessage", new Type[]{typeof(RoomChatMessageMessage)}),
+                    //scrollsTypes["ChatRooms"].Methods.GetMethod("ChatMessage", new Type[]{typeof(RoomChatMessageMessage)}),
+                   scrollsTypes["ArenaChat"].Methods.GetMethod("handleMessage", new Type[]{typeof(Message)}),
                     //scrollsTypes["ChatUI"].Methods.GetMethod("Initiate")[0],
                     //scrollsTypes["CardTypeManager"].Methods.GetMethod("get",new Type[]{typeof(int)}),
                     // only for testing:
@@ -855,15 +856,40 @@ namespace UserMenuInChat.mod
                 }
             }
 
+            /*
             else if (info.target is ChatRooms && info.targetMethod.Equals("ChatMessage"))
             {
+                Console.WriteLine("chatmessage inc##");
                 RoomChatMessageMessage msg = (RoomChatMessageMessage)info.arguments[0];
                 if (msg.roomName == chatRooms.GetCurrentRoom().name)
+                //if (((string)info.arguments[0]) == chatRooms.GetCurrentRoom().name)
                 {
                     this.recalc = true;
                 }
             }
+            */
 
+            else if (info.target is ArenaChat && info.targetMethod.Equals("handleMessage"))
+            {
+                Message msg = (Message)info.arguments[0];
+                if (msg is WhisperMessage)
+                {
+                    WhisperMessage whisperMessage = (WhisperMessage)msg;
+                    if (whisperMessage.GetChatroomName() == chatRooms.GetCurrentRoom().name)
+                    {
+                        this.recalc = true;
+                    }
+                }
+                if (msg is RoomChatMessageMessage)
+                {
+                    RoomChatMessageMessage mssg = (RoomChatMessageMessage)msg;
+                    if (mssg.roomName == chatRooms.GetCurrentRoom().name)
+                    {
+                        this.recalc = true;
+                    }
+                }
+            
+            }
 
 
 
