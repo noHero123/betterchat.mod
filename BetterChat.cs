@@ -231,11 +231,11 @@ namespace UserMenuInChat.mod
                     scrollsTypes["ChatUI"].Methods.GetMethod("OnGUI")[0],
                     //scrollsTypes["ChatRooms"].Methods.GetMethod("ChatMessage", new Type[]{typeof(RoomChatMessageMessage)}),
                    scrollsTypes["ArenaChat"].Methods.GetMethod("handleMessage", new Type[]{typeof(Message)}),
-                    //scrollsTypes["ChatUI"].Methods.GetMethod("Initiate")[0],
-                    //scrollsTypes["CardTypeManager"].Methods.GetMethod("get",new Type[]{typeof(int)}),
+
+
                     // only for testing:
                     //scrollsTypes["ChatRooms"].Methods.GetMethod("GetUserAdminRoleInRoom", new Type[]{typeof(string),typeof(string)}),
-                    
+                    //scrollsTypes["Communicator"].Methods.GetMethod("sendRequest", new Type[]{typeof(Message)}),  
                 };
             }
             catch
@@ -253,8 +253,26 @@ namespace UserMenuInChat.mod
                if (name == "usernameXD")
                { return true; }
             }
+             */
+            // for testing
+            /*
+            if (info.target is Communicator && info.targetMethod.Equals("sendRequest"))
+            {
+                
+                if (info.arguments[0] is RoomChatMessageMessage)
+                {
+
+
+                    RoomChatMessageMessage msg = (RoomChatMessageMessage)info.arguments[0];
+                    string[] splitt = msg.text.Split(' ');
+                    if ((splitt[0] == "/test"))
+                    {
+                        return true;
+                    }
+                }
+                
+            }
              */ 
-            
             return false;
         }
         public override void ReplaceMethod(InvocationInfo info, out object returnValue)
@@ -265,6 +283,42 @@ namespace UserMenuInChat.mod
                 returnValue = AdminRole.Mojang; // or AdminRole.Admin
             }
             */
+            /*
+            if (info.target is Communicator && info.targetMethod.Equals("sendRequest"))
+            {
+                //Console.WriteLine("sendrequest");
+                if (info.arguments[0] is RoomChatMessageMessage)
+                {
+
+
+                    RoomChatMessageMessage msg = (RoomChatMessageMessage)info.arguments[0];
+                    string[] splitt = msg.text.Split(' ');
+                    if (splitt.Length == 2)
+                    {
+
+                        if (splitt[1] == "2")
+                        {
+                            string text = @"WTS ALL ORDER AND ENERGY*  Honorable General 520g, Unleash inner power 345g Kinfolk Vet 150. Kinfolk Jarl 350, Blessing of Haste 250, Magma Pack 130g, Faith Duty 250";
+                            RoomChatMessageMessage joinmessage = new RoomChatMessageMessage(msg.roomName, text);
+                            joinmessage.from = "Alecburn";
+                            App.ChatUI.handleMessage(joinmessage);
+                            App.ArenaChat.ChatRooms.ChatMessage(joinmessage);
+
+                            return;
+                        }
+                    }
+
+                    if ((splitt[0] == "/test"))
+                    {
+                        string text = @"WTS >>Redeploy (1101g) // Flip (197g) // Kabonk (78g) // Shrine (242g) // Sinmarked Zealot (118g) // Pother (719g) // Transposition (88g) // Focus (96g) // Honorable General (535g) // Powerbound (71g) // Vengeance Veil (50g) // Horn of Ages (54g) // Summons (68g) // Woodland Memorial (85g) // Knight Scholar (513g) // Ducal Infantryman (74g) // Ducal Skirmisher (89g) // Crossbowman (76g) // Royal Spearman (130g) // Efficiency (207g) // Mangonel (326g) // Divine Mark (178g) // Faith Duty (119g) // ";
+                        RoomChatMessageMessage joinmessage = new RoomChatMessageMessage(msg.roomName,  text);
+                        joinmessage.from = "stever2410";
+                        App.ChatUI.handleMessage(joinmessage);
+                        App.ArenaChat.ChatRooms.ChatMessage(joinmessage);
+                    }
+                }
+            }
+                */
 
         }
 
@@ -625,7 +679,7 @@ namespace UserMenuInChat.mod
 
                         int posy = 0;//
 
-                        float width = (chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) + 1;
+                        float width = (chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f);
                         int globalfromxstart = (int)chatlogAreaInner.xMin + (int)(20f + (float)Screen.height * 0.042f) + 10;
                         int normlhight = (int)chatLogStyle.CalcHeight(new GUIContent("lol"), width);
                         if (recalc)
@@ -737,7 +791,7 @@ namespace UserMenuInChat.mod
                                 if (match.Success)
                                 {
                                     string link = match.Value;
-                                    if (!(link.StartsWith("https://")) || !(link.StartsWith("http://"))) { link = "http://" + link; }
+                                    if (!(link.StartsWith(@"https://")) && !(link.StartsWith(@"http://"))) { link = "http://" + link; }
                                     this.CreateLinkMenu(null, link);
                                     App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                 }
