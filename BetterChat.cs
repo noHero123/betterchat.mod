@@ -51,6 +51,16 @@ namespace UserMenuInChat.mod
             public Color color;
         }
 
+        struct cardsearcher 
+        {
+            public string clickedcardname;
+            public bool success;
+        }
+
+        private int clickedwordindex;
+        private string[] clickedtext;
+        private int longestcardname;
+
         private List<renderwords> textsArr = new List<renderwords>();
         private List<cardtextures> gameObjects = new List<cardtextures>();
         private FieldInfo icoField;
@@ -136,13 +146,15 @@ namespace UserMenuInChat.mod
                 this.cardnames = new string[d.GetLength(0)];
                 this.cardImageid = new int[d.GetLength(0)];
                 this.cardType = new string[d.GetLength(0)];
-
+                this.longestcardname = 0;
                 for (int i = 0; i < d.GetLength(0); i++)
                 {
                     cardids[i] = Convert.ToInt32(d[i]["id"]);
                     cardnames[i] = d[i]["name"].ToString().ToLower();
                     cardImageid[i] = Convert.ToInt32(d[i]["cardImage"]);
                     cardType[i] = d[i]["kind"].ToString();
+                    if (cardnames[i].Split(' ').Length > longestcardname) { longestcardname = cardnames[i].Split(' ').Length; };
+
                 }
                 App.Communicator.removeListener(this);//dont need the listener anymore
             }
@@ -165,7 +177,7 @@ namespace UserMenuInChat.mod
             // I had to remove a " in there to make it work, but it should match well enough anyway
             linkFinder = new Regex(@"(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'.,<>?«»“”‘’]))"
                 /*, RegexOptions.Compiled*/);
-            cardlinkfinder = new Regex(@"\[[a-zA-Z]+[a-zA-Z_]*[a-zA-z]+\]");//search for "[blub_blub_blub]"
+            cardlinkfinder = new Regex(@"\[[a-zA-Z]+[a-zA-Z_\t]*[a-zA-z]+\]");//search for "[blub_blub_blub]"
 
 
             statsBGField = typeof(CardView).GetField("statsBG", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -278,11 +290,13 @@ namespace UserMenuInChat.mod
         public override void ReplaceMethod(InvocationInfo info, out object returnValue)
         {
             returnValue = null;
+            // testing admin
             /*if (info.target is ChatRooms && info.targetMethod.Equals("GetUserAdminRoleInRoom"))
             {
                 returnValue = AdminRole.Mojang; // or AdminRole.Admin
             }
             */
+            // testing some messages:
             /*
             if (info.target is Communicator && info.targetMethod.Equals("sendRequest"))
             {
@@ -388,12 +402,12 @@ namespace UserMenuInChat.mod
                     clicked = clicked || rec.Contains(mousepos);
                     lastrec = rec;
                 }
-                if (clicked) { klickedword = words[i]; break; }
+                if (clicked) { klickedword = words[i]; this.clickedwordindex = i; clickedtext = words; break; }
                 if (mousepos.y < lastrec.yMin) {break; };           
             }
             if (!(klickedword == "")) { Console.WriteLine("### KLICKED: "+klickedword); }
 
-
+            
             return klickedword;
         }
 
@@ -599,6 +613,90 @@ namespace UserMenuInChat.mod
         //Console.WriteLine("bums");
 	}
 
+        private cardsearcher searchcard(string clickedword)
+        {
+            cardsearcher result;
+            result.clickedcardname = "";
+            result.success = false;
+            // first: test with underline
+            string clink = clickedword;
+            if (clink.StartsWith("[") && clink.EndsWith("]"))
+            {
+                clink = clink.Replace("[", "");
+                clink = clink.Replace("]", "");
+                clink = clink.Replace("_", " ");
+                result.clickedcardname = clink.ToLower();
+                result.success = true;
+            }
+            else
+            { 
+                // replace [ ] and _
+                clink = clink.Replace("[", "");
+                clink = clink.Replace("]", "");
+                clink = clink.Replace("_", " ");
+                // cardnames with only on word like "burn" are spottet in the first case and dont need to be processed here
+                int arrindex = Array.FindIndex(this.cardnames, element => element.Contains(clink));
+                
+                if (arrindex >= 0)
+                {
+                    string start = "";
+                    string ende = "";
+                 // find beginning "["
+                    int maxlen = this.longestcardname;
+                    if (maxlen > this.clickedwordindex) { maxlen = clickedwordindex; }
+                    Console.WriteLine(string.Join(" ", this.clickedtext));
+                    Console.WriteLine(maxlen);
+                    int i = 0;
+                    if (!clickedword.StartsWith("["))
+                    {   
+                        do{
+                            if (maxlen > i)
+                            {
+                                i++;
+                            }
+                            else { i = -1; break; }
+
+                        } while ((this.clickedtext[this.clickedwordindex - i].StartsWith("["))==false);
+                        if (i == -1) return result;
+                        start = string.Join(" ", this.clickedtext, this.clickedwordindex - i, i) + " ";
+                    }
+                    
+                //finding ending "]"
+                    maxlen = this.longestcardname;
+                    if (maxlen > this.clickedtext.Length-1 - this.clickedwordindex) { maxlen = this.clickedtext.Length-1 - this.clickedwordindex; }
+                    i = 0;
+                    if (!clickedword.EndsWith("]"))
+                    {
+                        do
+                        {
+                            if (maxlen > i)
+                            {
+                                i++;
+                            }
+                            else { i = -1; break; }
+
+                        } while ((this.clickedtext[this.clickedwordindex + i].EndsWith("]")) == false);
+                        if (i == -1) return result;
+                        ende = " " + string.Join(" ", this.clickedtext, this.clickedwordindex + 1, i);
+                    }
+
+
+                    clink = start + clickedword + ende;
+                    clink = clink.Replace("[", "");
+                    clink = clink.Replace("]", "");
+                    clink = clink.Replace("_", " ");
+                    result.clickedcardname = clink.ToLower();
+                    result.success = true;
+                }
+            
+            
+            
+            }
+
+           
+
+            return result;
+        }
 
         public override void AfterInvoke(InvocationInfo info, ref object returnValue)
         {
@@ -682,7 +780,7 @@ namespace UserMenuInChat.mod
                         float width = (chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f);
                         int globalfromxstart = (int)chatlogAreaInner.xMin + (int)(20f + (float)Screen.height * 0.042f) + 10;
                         int normlhight = (int)chatLogStyle.CalcHeight(new GUIContent("lol"), width);
-                        if (recalc)
+                        if (recalc) // recalc positions
                         {
                             this.roomuserlist.Clear();
                             //this.roomlinklist.Clear();
@@ -796,13 +894,18 @@ namespace UserMenuInChat.mod
                                     App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                 }
                                 //clickable card?
-                                Match mutch=cardlinkfinder.Match(klickedword);
-                                if (mutch.Success)
+
+                                cardsearcher cmatch = searchcard(klickedword);
+                                //Match mutch=cardlinkfinder.Match(klickedword);
+                                //if (mutch.Success)
+                                if (cmatch.success)
                                 {
-                                    string clink = mutch.Value.ToLower();
-                                    clink = clink.Replace("[","");
-                                    clink = clink.Replace("]", "");
-                                    clink = clink.Replace("_", " ");
+                                    //string clink = mutch.Value.ToLower();
+                                    //clink = clink.Replace("[","");
+                                    //clink = clink.Replace("]", "");
+                                    //clink = clink.Replace("_", " ");
+                                    string clink = cmatch.clickedcardname;
+                                    Console.WriteLine("CARDCLICKED: " + clink);
                                     int arrindex = Array.FindIndex(this.cardnames, element => element.Equals(clink));
                                     if (arrindex >= 0)
                                     {
