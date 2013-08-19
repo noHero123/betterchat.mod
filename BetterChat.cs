@@ -58,7 +58,7 @@ namespace UserMenuInChat.mod
         }
 
         private int clickedwordindex;
-        private string[] clickedtext;
+        private string[] clickedtext=new string[0];
         private int longestcardname;
 
         private List<renderwords> textsArr = new List<renderwords>();
