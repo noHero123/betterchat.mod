@@ -565,12 +565,10 @@ namespace UserMenuInChat.mod
 
             Rect rect = new Rect(Mathf.Min((float)(Screen.width - 105), mousePosition.x), Mathf.Min((float)(Screen.height - 90 - 5), (float)Screen.height - mousePosition.y), 100f, 30f);
 
-            ContextMenu<ChatUser> userContextMenu = null;
 
-
-            userContextMenu = new ContextMenu<ChatUser>(user, rect);
+            Gui.ContextMenu<ChatUser>userContextMenu = new Gui.ContextMenu<ChatUser>(user, rect);
             this.globallink = link;
-            userContextMenu.add("Open Link", new ContextMenu<ChatUser>.URCMCallback(OpenLink));
+            userContextMenu.add("Open Link", new Gui.ContextMenu<ChatUser>.URCMCallback(OpenLink));
 
             if (userContextMenu != null)
             {
@@ -585,7 +583,7 @@ namespace UserMenuInChat.mod
         private void CreateUserMenu(ChatUser user , object infotarget, int length)
 	{
         bool canOpenContextMenu = (bool)typeof(ChatUI).GetField("canOpenContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(infotarget);
-        ContextMenu<ChatUser> userContextMenu = null;      
+        Gui.ContextMenu<ChatUser> userContextMenu = null;      
 
 		if (!canOpenContextMenu)
 		{
@@ -593,20 +591,20 @@ namespace UserMenuInChat.mod
 		}
 		Vector3 mousePosition = Input.mousePosition;
 		Rect rect = new Rect(Mathf.Min((float)(Screen.width - 105), mousePosition.x+100), Mathf.Min((float)(Screen.height - 90 - 5), (float)Screen.height - mousePosition.y), Mathf.Max(100f,length+10), 30f);
-		userContextMenu = new ContextMenu<ChatUser>(user, rect);
+		userContextMenu = new Gui.ContextMenu<ChatUser>(user, rect);
 
-        userContextMenu.add(user.name, new ContextMenu<ChatUser>.URCMCallback(ProfileUser)); 
+        userContextMenu.add(user.name, new Gui.ContextMenu<ChatUser>.URCMCallback(ProfileUser)); 
        
 		if (user.acceptTrades)
 		{
-			userContextMenu.add("Trade", new ContextMenu<ChatUser>.URCMCallback(TradeUser));
+            userContextMenu.add("Trade", new Gui.ContextMenu<ChatUser>.URCMCallback(TradeUser));
 		}
 
-        userContextMenu.add("Whisper", new ContextMenu<ChatUser>.URCMCallback(whisperclick));
+        userContextMenu.add("Whisper", new Gui.ContextMenu<ChatUser>.URCMCallback(whisperclick));
 
         if (user.acceptChallenges)
         {
-            userContextMenu.add("Challenge", new ContextMenu<ChatUser>.URCMCallback(ChallengeUser));
+            userContextMenu.add("Challenge", new Gui.ContextMenu<ChatUser>.URCMCallback(ChallengeUser));
         }
         userContextMenuField.SetValue(target, userContextMenu);
         App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
@@ -772,7 +770,8 @@ namespace UserMenuInChat.mod
                         chatLogStyle = (GUIStyle)chatLogStyleinfo.GetValue(info.target);
 
                         bool allowSendingChallenges = (bool)allowSendingChallengesinfo.GetValue(info.target);
-                        ContextMenu<ChatUser> userContextMenu = (ContextMenu<ChatUser>)userContextMenuinfo.GetValue(info.target);
+
+                        Gui.ContextMenu<ChatUser> userContextMenu = (Gui.ContextMenu<ChatUser>)userContextMenuinfo.GetValue(info.target);
                         float maxScroll = (float)maxScrollinfo.GetValue(info.target);
 
                         int posy = 0;//
