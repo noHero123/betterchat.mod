@@ -225,7 +225,7 @@ namespace UserMenuInChat.mod
 
         public static string GetName()
         {
-            return "UserMenuInChat";
+            return "Betterchat";
         }
 
         public static int GetVersion()
@@ -632,6 +632,7 @@ namespace UserMenuInChat.mod
                 clink = clink.Replace("[", "");
                 clink = clink.Replace("]", "");
                 clink = clink.Replace("_", " ");
+                clink = clink.ToLower();
                 // cardnames with only on word like "burn" are spottet in the first case and dont need to be processed here
                 int arrindex = Array.FindIndex(this.cardnames, element => element.Contains(clink));
                 
