@@ -133,6 +133,11 @@ namespace UserMenuInChat.mod
         private int cardnametoid(string name) { return cardids[Array.FindIndex(cardnames, element => element.Equals(name))]; }
         private int cardnametoimageid(string name) { return cardImageid[Array.FindIndex(cardnames, element => element.Equals(name))]; }
 
+        public void onConnect(OnConnectData ocd)
+        { 
+        // lol
+        }
+
         public void handleMessage(Message msg)
         { // collect data for enchantments (or units who buff)
 
