@@ -112,6 +112,11 @@ namespace UserMenuInChat.mod
         private Regex linkFinder;
         private Regex cardlinkfinder;
 
+        //for copying string into buffer
+        Type T = typeof(GUIUtility);
+        PropertyInfo systemCopyBufferProperty;
+
+
         // dict from room log, to another dict that maps chatline to a username
         //dont use currently
         private Dictionary<RoomLog, Dictionary<RoomLog.ChatLine, string>> chatLineToUserNameCache = new Dictionary<RoomLog, Dictionary<RoomLog.ChatLine, string>>();
@@ -166,10 +171,7 @@ namespace UserMenuInChat.mod
 
             return;
         }
-        public void onReconnect()
-        {
-            return; // don't care
-        }
+        
 
 
 
@@ -216,7 +218,7 @@ namespace UserMenuInChat.mod
             this.GUIObject = new GameObject();
             this.GUIObject.transform.parent = Camera.main.transform;
             this.GUIObject.transform.localPosition = new Vector3(0f, 0f, Camera.main.transform.position.y - 0.3f);
-
+            this.systemCopyBufferProperty = T.GetProperty("systemCopyBuffer", BindingFlags.Static | BindingFlags.NonPublic);
             
 
 
@@ -225,6 +227,7 @@ namespace UserMenuInChat.mod
                 App.Communicator.addListener(this);
             }
             catch { }
+            Console.WriteLine("BetterChat loaded");
 
         }
 
@@ -235,7 +238,7 @@ namespace UserMenuInChat.mod
 
         public static int GetVersion()
         {
-            return 3;
+            return 5;
         }
 
         public static MethodDefinition[] GetHooks(TypeDefinitionCollection scrollsTypes, int version)
@@ -371,6 +374,11 @@ namespace UserMenuInChat.mod
         {
             this.CloseUserMenuinfo.Invoke(target, null);
             Process.Start(this.globallink);
+        }
+        private void CopyLink(ChatUser user)
+        {
+            this.CloseUserMenuinfo.Invoke(target, null);
+            systemCopyBufferProperty.SetValue(null, this.globallink, null);
         }
 
         private void whisperclick(ChatUser user)
@@ -573,8 +581,15 @@ namespace UserMenuInChat.mod
 
             Gui.ContextMenu<ChatUser>userContextMenu = new Gui.ContextMenu<ChatUser>(user, rect);
             this.globallink = link;
-            userContextMenu.add("Open Link", new Gui.ContextMenu<ChatUser>.URCMCallback(OpenLink));
-
+            if (link.Contains("www.UltimateDeckImporter.com"))
+            { 
+                userContextMenu.add("Copy Link", new Gui.ContextMenu<ChatUser>.URCMCallback(CopyLink)); 
+            }
+            else
+            {
+                userContextMenu.add("Open Link", new Gui.ContextMenu<ChatUser>.URCMCallback(OpenLink));
+            }
+            
             if (userContextMenu != null)
             {
                 userContextMenuField.SetValue(target, userContextMenu);
