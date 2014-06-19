@@ -73,6 +73,7 @@ namespace UserMenuInChat.mod
         private FieldInfo gosactiveAbilityField;
         private FieldInfo textsArrField;
         private FieldInfo cardImageField;
+        private FieldInfo weeklyWinnerInfo;
 
         int screenh = 0;
         int screenw = 0;
@@ -214,6 +215,7 @@ namespace UserMenuInChat.mod
             allowSendingChallengesinfo = typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic);
             userContextMenuinfo = typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic);
             maxScrollinfo = typeof(ChatUI).GetField("maxScroll", BindingFlags.Instance | BindingFlags.NonPublic);
+            weeklyWinnerInfo = typeof(ChatUI).GetField("weeklyWinners", BindingFlags.Instance | BindingFlags.NonPublic);
 
             this.GUIObject = new GameObject();
             this.GUIObject.transform.parent = Camera.main.transform;
@@ -238,7 +240,7 @@ namespace UserMenuInChat.mod
 
         public static int GetVersion()
         {
-            return 5;
+            return 6;
         }
 
         public static MethodDefinition[] GetHooks(TypeDefinitionCollection scrollsTypes, int version)
@@ -430,8 +432,8 @@ namespace UserMenuInChat.mod
             string txttilllink = mssg;
             
             string txtwithlink = txttilllink + link;
-            int linkbeginhight = (int)style.CalcHeight(new GUIContent(txttilllink), width);
-            int temp = (int)style.CalcHeight(new GUIContent(txtwithlink), width);
+            int linkbeginhight = (int)GUI.skin.label.CalcHeight(new GUIContent(txttilllink), width);
+            int temp = (int)GUI.skin.label.CalcHeight(new GUIContent(txtwithlink), width);
             bool startnewline=false;
             if (temp > linkbeginhight) { linkbeginhight = linkbeginhight + normlhight;startnewline=true; } // if the link is too long, he will start on an extra line
             int ind = 0;
@@ -440,29 +442,34 @@ namespace UserMenuInChat.mod
             string linetilllinkstart = lastline + " ";
             if (startnewline) { linetilllinkstart = ""; };
             ind = 0;
-            int linkendhight = (int)style.CalcHeight(new GUIContent(txtwithlink), width);
+            int linkendhight = (int)GUI.skin.label.CalcHeight(new GUIContent(txtwithlink), width);
+            Console.WriteLine(txtwithlink + "#");
             int linkbeginnindex = txttilllink.Length;
             string linetilllinkend = linetilllinkstart + link;// we need this for calculating the x-coordinate of link-ending
             if (!(linkbeginhight == linkendhight))      // if the end of the link isnt in the same line like the begining, we have to find the line where it ends 
             {
                 for (int i = link.Length; i > 0; i--)
                 {
-                    int tmphight = (int)style.CalcHeight(new GUIContent(txtwithlink.Substring(0, linkbeginnindex + i)), width);
+                    int tmphight = (int)GUI.skin.label.CalcHeight(new GUIContent(txtwithlink.Substring(0, linkbeginnindex + i)), width);
                     //Console.WriteLine(txtwithlink.Substring(linkbeginnindex, i) + tmphight);
+                    //Console.WriteLine(txtwithlink.Substring(linkbeginnindex + i + 1 - 1, (link.Length) - i - 1 + 1));
                     if (tmphight < linkendhight) { ind = i + 1; break; };
+                    
                 }
-                linetilllinkend = txtwithlink.Substring(linkbeginnindex + ind - 1, (link.Length) - ind);
+                linetilllinkend = txtwithlink.Substring(linkbeginnindex + ind - 1, (link.Length) - ind+1);
             }
-            //Console.WriteLine("Linksearcher:#" + linetilllinkstart + "#and#" + linetilllinkend+"#");
+            //Console.WriteLine("Linksearcher:#" + linetilllinkstart + "#and#" + linetilllinkend + "#");
 
             // we found beginn and endline, last thing todo, is to calculate the (maximum) 3 rect wich contains the link:
             style.wordWrap = false;// need to do this, or length of calcsize is wrong.. lol!!!
-            int beginlength = (int)chatLogStyle.CalcSize(new GUIContent(linetilllinkstart)).x;
+            int beginlength = (int)style.CalcSize(new GUIContent(linetilllinkstart)).x;
             if (linetilllinkstart == "") { beginlength = 0; }
-            int endlength = (int)chatLogStyle.CalcSize(new GUIContent(linetilllinkend)).x;
+            int endlength = (int)style.CalcSize(new GUIContent(linetilllinkend)).x;
             style.wordWrap = true;
             Rect[] rects = null;
             //Console.WriteLine("link " + link + " " + beginlength + " " + endlength);
+            //Console.WriteLine(ystart + " " + linkbeginhight + " " + " " + linkendhight + " " + normlhight);
+            ystart = ystart + normlhight - (int)GUI.skin.label.CalcHeight(new GUIContent("lol"), width);
             if (linkbeginhight == linkendhight) // nur ein rect
             {
                 rects = new Rect[1];
@@ -482,7 +489,7 @@ namespace UserMenuInChat.mod
                 rects[2] = new Rect(globalfromxstart, ystart + linkendhight - normlhight, endlength, normlhight);
             }
 
-            //for (int i = 0; i < rects.Length; i++) { Console.WriteLine(rects[i].ToString()); }
+            for (int i = 0; i < rects.Length; i++) { Console.WriteLine(rects[i].ToString()); }
 
             wordclickdata data = new wordclickdata();
             data.wordrects = rects;
@@ -598,6 +605,24 @@ namespace UserMenuInChat.mod
 
         }
 
+        private void copyDeckMenu(ChatUser user, string deck)
+        {
+            Vector3 mousePosition = Input.mousePosition;
+            // need 30 pixels of extra space per item added
+
+            Rect rect = new Rect(Mathf.Min((float)(Screen.width - 105), mousePosition.x), Mathf.Min((float)(Screen.height - 90 - 5), (float)Screen.height - mousePosition.y), 100f, 30f);
+
+            this.globallink = deck;
+            Gui.ContextMenu<ChatUser> userContextMenu = new Gui.ContextMenu<ChatUser>(user, rect);
+            userContextMenu.add("Copy Deck", new Gui.ContextMenu<ChatUser>.URCMCallback(CopyLink));
+            
+            if (userContextMenu != null)
+            {
+                userContextMenuField.SetValue(target, userContextMenu);
+                App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
+            }
+
+        }
 
 
         private void CreateUserMenu(ChatUser user , object infotarget, int length)
@@ -793,6 +818,7 @@ namespace UserMenuInChat.mod
                         bool allowSendingChallenges = (bool)allowSendingChallengesinfo.GetValue(info.target);
 
                         Gui.ContextMenu<ChatUser> userContextMenu = (Gui.ContextMenu<ChatUser>)userContextMenuinfo.GetValue(info.target);
+                        WeeklyWinner[] weeklyWinners = (WeeklyWinner[])weeklyWinnerInfo.GetValue(info.target);
                         float maxScroll = (float)maxScrollinfo.GetValue(info.target);
 
                         int posy = 0;//
@@ -800,6 +826,7 @@ namespace UserMenuInChat.mod
                         float width = (chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f);
                         int globalfromxstart = (int)chatlogAreaInner.xMin + (int)(20f + (float)Screen.height * 0.042f) + 10;
                         int normlhight = (int)chatLogStyle.CalcHeight(new GUIContent("lol"), width);
+                        float diff = GUI.skin.label.CalcHeight(new GUIContent("lol"), width) - chatLogStyle.CalcHeight(new GUIContent("lol"), width);
                         if (recalc) // recalc positions
                         {
                             this.roomuserlist.Clear();
@@ -821,42 +848,50 @@ namespace UserMenuInChat.mod
                                 
                                 templog.from = shorttxt.Split(':')[0];
                                 templog.admin = false; //for testing true
-                                if (current.senderAdminRole == AdminRole.Mojang)
+                                if (current.senderAdminRole == AdminRole.Mojang || current.senderAdminRole == AdminRole.Moderator || current.senderFeatureType == FeatureType.DEMO)
                                 {
                                     templog.admin = true;
-                                    //chatLogStyle.fontSize
                                 }
-
-                                else
+                                if (!templog.admin)
                                 {
-                                    if (current.senderAdminRole == AdminRole.Moderator)
+                                    if (weeklyWinners != null && weeklyWinners.Length >= 4)
                                     {
-                                        templog.admin = true;
+                                        for (int i = 0; i < 4; i++)
+                                        {
+                                            if (current.from == weeklyWinners[i].userName)
+                                            {
+                                                templog.admin = true;
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
 
                                 chatLogStyle.wordWrap = false;// need to do this, or length of calcsize is wrong.. lol!!!
-                                Vector2 v = chatLogStyle.CalcSize(new GUIContent(templog.from + ":"));//calc length of "username:"
+                                
+                                Vector2 v = GUI.skin.label.CalcSize(new GUIContent(templog.from + ":"));//calc length of "username:" //chatLogStyle.CalcSize
                                 if (templog.admin)
                                 { // "iiii " has the same length like the symbol
-                                    v = chatLogStyle.CalcSize(new GUIContent("iiii "+templog.from + ":"));//calc length of "username:"
+                                    v = GUI.skin.label.CalcSize(new GUIContent("iiii " + templog.from + ":"));//calc length of "username:"
                                 }
                                 chatLogStyle.wordWrap = true;
 
-                                
-                                float msgheight = chatLogStyle.CalcHeight(new GUIContent(current.text), width);
+                                int test123 = (int)chatLogStyle.CalcHeight(new GUIContent(current.text), width);
+                                float msgheight = GUI.skin.label.CalcHeight(new GUIContent(current.text), width)-diff;
                                 //float msgheight = chatLogStyle.CalcHeight(new GUIContent(shorttxt), width);
                                 //Console.WriteLine(current.text + " " + shorttxt + " " + msgheight);
                                 int fromxend = (int)v.x + globalfromxstart;
                                 templog.usernamelength = (int)v.x;
                                 int fromystart = posy;
-                                int fromyend = posy + (int)v.y;
-                                templog.end = posy + (int)msgheight + 2;//2 is added after each msg
-                                posy += (int)msgheight + 2;
+                                int fromyend = posy + normlhight;//(int)v.y
+                                templog.end = posy + (int)msgheight +2;//2 is added after each msg
+                                posy += (int)msgheight +2;
                                 templog.userrec = new Rect(globalfromxstart, fromystart, fromxend - globalfromxstart, fromyend - fromystart);
                                 this.roomuserlist.Add(templog);
 
-                                //Console.WriteLine(current.text+" "+templog.from +" "+shorttxt+" " + v.x + " " + templog.fromxend + " " + msgheight + " " + posy);
+                                //Console.WriteLine(current.text+" "+templog.from +" "+shorttxt+" " + v.x + " " + fromxend + " " + msgheight + " " + posy);
+                                //Console.WriteLine(msgheight + " old:" + test123);
+                                //Console.WriteLine("##");
                             }
 
 
@@ -904,7 +939,14 @@ namespace UserMenuInChat.mod
                                 
                                 string klickedword = whitchwordclicked(log.msg, chatLogStyle, width, normlhight, globalfromxstart, (int)usrbutton.yMin+2, mousepos, log.admin);
                                 //clickable link?
-                                
+
+                                if (klickedword.StartsWith("{\"deck\":\"") && klickedword.EndsWith("]}") && klickedword.Contains("\",\"types\":["))
+                                {
+                                    //is a deck-link! 
+                                    this.copyDeckMenu(null, klickedword);
+                                    App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
+                                }
+
                                 Match match = linkFinder.Match(klickedword);
                                 if (match.Success)
                                 {
